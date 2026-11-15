@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f1615">
+<title>MARSWALK · Interplanetary Survival Guide</title>
+<meta name="description" content="NASA Space Apps 2026 · Challenge #10 Interplanetary Survival Guide: Martian Map. A real-data traverse planner for Jezero Crater and a companion EVA game.">
+<style>
+:root{color-scheme:dark;--bg:#0f1615;--panel:#162120;--line:#2f413f;--muted:#9cacaa;--text:#ecf2ea;--mint:#a6e3c3;--orange:#f2ad79;font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -10%,#3a2620 0,#0f1615 60%);color:var(--text);min-height:100vh}
+main{max-width:1040px;margin:auto;padding:56px 20px 40px}
+.eyebrow{font-size:11px;letter-spacing:.2em;color:var(--mint);font-weight:700;text-transform:uppercase}
+h1{font-size:clamp(30px,5vw,48px);margin:10px 0 8px;letter-spacing:.04em}h1 span{color:var(--orange)}
+.lead{color:#cfd9d4;max-width:680px;font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px;margin:34px 0}
+a.card{display:flex;flex-direction:column;gap:10px;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;transition:border-color .2s,transform .2s}
+a.card:hover,a.card:focus-visible{border-color:var(--mint);transform:translateY(-2px);outline:none}
+.card.game:hover,.card.game:focus-visible{border-color:var(--orange)}
+.tag{align-self:flex-start;font-size:10px;font-weight:800;letter-spacing:.14em;border-radius:5px;padding:3px 8px;background:var(--mint);color:#0f1a16}
+.game .tag{background:var(--orange);color:#24130b}
+.card h2{margin:0;font-size:22px}.card p{margin:0;color:var(--muted);font-size:14px}
+.card ul{margin:4px 0 0;padding-left:18px;color:#cfd9d4;font-size:13px}
+.go{margin-top:auto;padding-top:10px;color:var(--mint);font-weight:700;font-size:14px}.game .go{color:var(--orange)}
+footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
+footer a{color:var(--mint)}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">NASA Space Apps 2026 · Challenge #10</div>
+  <h1>MARS<span>WALK</span></h1>
+  <p class="lead">An interplanetary survival guide for the first people to walk on Mars. Plan a safe, science-rich Marswalk on real Jezero Crater terrain, then feel the stakes in a field-operations simulation.</p>
+  <div class="grid">
+    <a class="card" href="marswalk.html">
+      <span class="tag">REAL NASA / USGS DATA</span>
+      <h2>Field Systems planner</h2>
+      <p>Offline tactical traverse planner for the Jezero western delta.</p>
+      <ul>
+        <li>Six integrated layers: CTX imagery, 20 m DEM and slope, THEMIS, CRISM, SIM 3464 geology</li>
+        <li>Optimal multi-stop science traverses that avoid slopes above 15°</li>
+        <li>Instant re-routing around reported obstructions</li>
+        <li>Visor HUD, 3D astronaut view, EVA time budget</li>
+      </ul>
+      <span class="go">Open planner →</span>
+    </a>
+    <a class="card game" href="field-operations.html">
+      <span class="tag">SIMULATION GAME</span>
+      <h2>Field Operations</h2>
+      <p>Choose a landing cell on the global Mars map, descend, and explore on foot.</p>
+      <ul>
+        <li>Global NASA Mars Trek basemap with selectable landing grid</li>
+        <li>Third- and first-person EVA with oxygen and battery management</li>
+        <li>Fictional telemetry, labelled as simulated</li>
+        <li>Desktop keyboard/mouse and touch controls</li>
+      </ul>
+      <span class="go">Play →</span>
+    </a>
+  </div>
+  <footer>The planner's measurements come from NASA Mars Trek CTX imagery, the USGS Mars 2020 CTX DEM, USGS SIM 3464, MRO CRISM, THEMIS-derived thermal inertia and Perseverance MEDA, all cited in the app. Times, reserves and slope limits are user assumptions. Neither app is flight software or a safety certification.</footer>
+</main>
+</body>
+</html>

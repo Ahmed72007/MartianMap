@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f1615">
+<meta name="description" content="MARSWALK — offline astronaut traverse planner for Jezero Crater built on NASA/USGS orbital data. NASA Space Apps 2026, Challenge #10.">
+<title>MARSWALK | Jezero Field Systems</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23111818' stroke='%23a6e3c3' stroke-width='2'/%3E%3Ctext x='16' y='21' font-size='14' text-anchor='middle' fill='%23a6e3c3' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
+<style>/*__CSS__*/</style>
+</head>
+<body>
+<a class="skip" href="#plannerPanel">Skip to traverse planner</a>
+<div id="boot" class="boot" role="status" aria-live="polite"><div class="boot-card"><span class="brand-mark" aria-hidden="true">M</span><b>MARSWALK</b><span id="bootText">Decoding embedded NASA / USGS products…</span><div class="boot-bar"><i></i></div></div></div>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">M</span><div><b>MARSWALK</b><small>FIELD SYSTEMS · JEZERO CRATER · WESTERN DELTA</small></div></div>
+  <nav class="top-actions" aria-label="Application">
+    <span class="live" title="All products are embedded; no network needed for the 2D planner">OFFLINE DATA READY</span>
+    <button id="helpBtn" class="ghost" aria-haspopup="dialog">Guide</button>
+    <button id="challengeBtn" class="ghost" aria-haspopup="dialog">Challenge coverage</button>
+  </nav>
+</header>
+
+<main class="app">
+<!-- LEFT: layers + inspector -->
+<aside class="side left" aria-label="Map layers and location inspector">
+  <section class="section">
+    <div class="eyebrow">01 / evidence layers</div>
+    <h2>Multi-layer integration</h2>
+    <div class="field"><label for="regionSelect">Terrain coverage</label>
+      <select id="regionSelect"><option value="expanded">Expanded · 7.5 × 7.5 km</option><option value="m1">Pilot · 5 × 5 km</option></select></div>
+    <p class="hint" id="coverageHint"></p>
+    <div class="layer-list" role="group" aria-label="Map layers">
+      <label class="layer"><input type="checkbox" id="imageryOn" checked><span><i class="sw" style="background:linear-gradient(90deg,#4b3a32,#c39a7c)"></i>CTX orbital imagery<small>NASA Mars Trek · optical mosaic</small></span></label>
+      <label class="layer"><input type="checkbox" id="hazardOn" checked><span><i class="sw" style="background:#e5484d"></i>Slope hazard flag<small>Cells above threshold · derived from DEM</small></span></label>
+      <label class="layer"><input type="checkbox" id="elevationOn"><span><i class="sw" style="background:linear-gradient(90deg,#36505d,#437e77,#a2a16d,#dcb579,#c56e53)"></i>Elevation tint<small>USGS CTX DEM · 20 m · metres</small></span></label>
+      <label class="layer"><input type="checkbox" id="slopeOn"><span><i class="sw" style="background:linear-gradient(90deg,#3e8f94,#b2b378,#e8a34f,#dc683d,#9d3e4b)"></i>Derived slope<small>Terrain gradient · degrees</small></span></label>
+      <label class="layer"><input type="checkbox" id="thermalOn"><span><i class="sw" style="background:linear-gradient(90deg,#3f65a9,#5fa9b9,#b2c5a5,#e0b36e,#c3694e)"></i>Thermal inertia<small>THEMIS-derived · 100 m · not temperature</small></span></label>
+      <label class="layer"><input type="checkbox" id="crismOn"><span><i class="sw" style="background:linear-gradient(90deg,#4c6fa8,#d9d6c7,#c4572f)"></i>CRISM D2300 index<small>Observed spectral parameter · partial footprint</small></span></label>
+      <label class="layer"><input type="checkbox" id="geologyOn"><span><i class="sw" style="background:linear-gradient(90deg,#d99d72,#7da69a,#9b91b9)"></i>Geologic units<small>USGS SIM 3464 · interpretation</small></span></label>
+      <label class="layer"><input type="checkbox" id="stopsOn" checked><span><i class="sw dot" style="background:#f5d083"></i>Mapped small-crater points<small>USGS SIM 3464 · candidate stops</small></span></label>
+    </div>
+    <div class="field inline"><label for="opacity">Overlay opacity</label><input type="range" id="opacity" min="20" max="100" value="72"></div>
+  </section>
+
+  <section class="section">
+    <div class="eyebrow">02 / tactical safety</div>
+    <h2>Hazard rules</h2>
+    <div class="two">
+      <div class="field"><label for="hazardThr">Slope threshold °</label><input id="hazardThr" type="number" min="1" max="45" step="0.5" value="15"></div>
+      <div class="field"><label for="obstacleRadius">Obstruction radius</label><select id="obstacleRadius"><option value="40">40 m</option><option value="80" selected>80 m</option><option value="150">150 m</option></select></div>
+    </div>
+    <label class="layer compact"><input type="checkbox" id="avoidHazard" checked><span>Treat flagged cells as impassable<small>Routes never enter a cell above the threshold</small></span></label>
+    <div id="hazardStats" class="hint"></div>
+    <div id="obstacleList" class="obstacles"></div>
+    <p class="hint">15° is the Challenge #10 example benchmark, used here as an adjustable assumption. 20 m DEM cells cannot resolve boulders, trenches or soft regolith — use <b>Mark obstruction</b> for field reports.</p>
+  </section>
+
+  <section class="section">
+    <div class="eyebrow">03 / map inspector</div>
+    <h2>Selected location</h2>
+    <div class="card" id="inspectCard" aria-live="polite"><div class="muted">Click the map to read the actual raster values at a 20 m cell.</div></div>
+  </section>
+</aside>
+
+<!-- CENTER: map / 3D -->
+<section class="map-shell" id="mapShell" aria-label="Interactive Jezero map">
+  <div class="map-head">
+    <div class="view-tabs" role="tablist" aria-label="View">
+      <button role="tab" id="tab2d" aria-selected="true" class="tab active">2D map</button>
+      <button role="tab" id="tab3d" aria-selected="false" class="tab">3D terrain</button>
+    </div>
+    <div class="mode-group" role="group" aria-label="Map click action">
+      <button class="mode active" data-mode="inspect" title="Inspect (I)">Inspect</button>
+      <button class="mode" data-mode="start" title="Set start (S)">Set start</button>
+      <button class="mode" data-mode="stop" title="Add stop (W)">Add stop</button>
+      <button class="mode danger" data-mode="obstacle" title="Mark obstruction (O)">Mark obstruction</button>
+    </div>
+    <div class="head-actions">
+      <button id="hudBtn" class="accent" title="Astronaut visor / tablet HUD (H)">Visor HUD</button>
+      <button id="fullBtn" class="ghost" title="Fullscreen" aria-label="Toggle fullscreen">⛶</button>
+    </div>
+  </div>
+  <div class="map-area" id="mapArea">
+    <canvas id="map" tabindex="0" aria-label="Interactive map of CTX imagery over the Jezero western delta. Arrow keys pan, plus and minus zoom, Enter acts at the map centre."></canvas>
+    <div id="view3d" class="view3d hidden" aria-label="3D perspective rendered from the orbital DEM and CTX imagery"></div>
+    <div class="map-tools"><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button><button id="fitMap" aria-label="Fit map">Fit</button></div>
+    <div class="map-legend" id="legend"><button id="legendToggle" class="legend-toggle" aria-expanded="true" aria-controls="legendBody">Legend ▾</button><div id="legendBody" aria-live="polite"></div></div>
+    <div class="mode-hint" id="modeHint" aria-live="polite"></div>
+    <div class="note3d hidden" id="note3d">
+      <div class="two-btn"><button id="cam3dOrbit" class="tab active">Orbit</button><button id="cam3dWalk" class="tab">Astronaut eye</button></div>
+      <label>Vertical exaggeration <input id="exag" type="range" min="1" max="4" step="0.5" value="1.5"> <b id="exagVal">1.5×</b></label>
+      <small>Rendered from 20 m orbital DEM + CTX imagery. Not a surface photograph.</small>
+    </div>
+    <!-- HUD -->
+    <div id="hud" class="hud hidden" role="region" aria-label="Visor heads-up display">
+      <div class="hud-top">
+        <div class="hud-block"><small>NEXT WAYPOINT</small><b id="hudNext">—</b><span id="hudNextSub"></span></div>
+        <div class="hud-compass" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44"/><g id="hudArrow"><path d="M50 14 L60 52 L50 46 L40 52 Z"/></g><text x="50" y="11">N</text></svg></div>
+        <div class="hud-block right"><small>EVA CLOCK</small><b id="hudClock">00:00</b><span id="hudClockSub"></span></div>
+      </div>
+      <div class="hud-alert" id="hudAlert" role="alert"></div>
+      <div class="hud-bottom">
+        <div class="hud-chips"><span class="chip" id="hudSlope">SLOPE —</span><span class="chip" id="hudAhead">AHEAD —</span><span class="chip" id="hudElev">ELEV —</span><span class="chip" id="hudState">STANDBY</span></div>
+        <div class="timeline" id="hudTimeline" aria-hidden="true"></div>
+        <div class="hud-controls">
+          <button id="playBtn" class="accent">▶ Play traverse</button>
+          <label class="speed">Sim speed <select id="playSpeed"><option value="30">30×</option><option value="120" selected>120×</option><option value="600">600×</option></select></label>
+          <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Traverse playback position">
+          <button id="hudClose" class="ghost">Exit HUD</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="map-foot"><span id="cursorReadout">Drag to pan · scroll / pinch to zoom · click to act</span><span id="mapStatus">CTX imagery · numeric DEM inside dashed boundary</span></div>
+</section>
+
+<!-- RIGHT: planner + intelligence -->
+<aside class="side right" aria-label="Mission planner and intelligence">
+  <div class="panel-tabs" role="tablist" aria-label="Planner sections">
+    <button role="tab" class="ptab active" data-panel="plannerPanel" aria-selected="true">Traverse</button>
+    <button role="tab" class="ptab" data-panel="sciencePanel" aria-selected="false">Science</button>
+    <button role="tab" class="ptab" data-panel="envPanel" aria-selected="false">Environment</button>
+    <button role="tab" class="ptab" data-panel="sourcesPanel" aria-selected="false">Sources</button>
+  </div>
+
+  <div class="panel" id="plannerPanel" role="tabpanel">
+    <section class="section">
+      <div class="eyebrow">04 / waypoint planning</div>
+      <h2>Traverse waypoints</h2>
+      <ol id="wpList" class="wp-list" aria-live="polite"></ol>
+      <div class="form-actions">
+        <select id="stopSelect" aria-label="Add a USGS mapped small-crater point as a stop"><option value="">+ Add SIM 3464 point…</option></select>
+        <button id="demoBtn">Load demo traverse</button>
+      </div>
+      <details class="details"><summary>Add by coordinates</summary>
+        <div class="two"><div class="field"><label for="coordLon">Longitude °E</label><input id="coordLon" inputmode="decimal" placeholder="77.42"></div><div class="field"><label for="coordLat">Latitude °N</label><input id="coordLat" inputmode="decimal" placeholder="18.45"></div></div>
+        <div class="form-actions"><button id="coordStart">Set as start</button><button id="coordStop">Add as stop</button></div>
+      </details>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">05 / route model</div>
+      <h2>Objective & suit assumptions</h2>
+      <div class="field"><label for="objective">Optimise for</label>
+        <select id="objective"><option value="time" selected>Estimated suited walking time</option><option value="terrain">Terrain-penalised distance</option><option value="distance">Shortest distance</option></select></div>
+      <div class="two">
+        <div class="field"><label for="flatSpeed">Flat walking speed km/h</label><input id="flatSpeed" type="number" min="0.5" max="6" step="0.1" value="2.5"></div>
+        <div class="field" id="weightField"><label for="weight">Terrain weight</label><input id="weight" type="number" min="0" max="100000" value="100"></div>
+        <div class="field"><label for="stopMinutes">Minutes per stop</label><input id="stopMinutes" type="number" min="0" max="600" value="20"></div>
+        <div class="field"><label for="reserve">Reserve minutes</label><input id="reserve" type="number" min="0" max="600" value="30"></div>
+        <div class="field"><label for="evaLimit">EVA time limit min</label><input id="evaLimit" type="number" min="10" max="1440" value="300"></div>
+      </div>
+      <label class="layer compact"><input type="checkbox" id="optimize" checked><span>Optimise stop order<small>Exact search over all visiting orders</small></span></label>
+      <label class="layer compact"><input type="checkbox" id="returnStart" checked><span>Return to start<small>Closed loop back to the habitat / lander</small></span></label>
+      <button class="primary wide" id="planBtn">Plan traverse</button>
+      <div id="planStatus" class="status-bar" role="status" aria-live="polite">Add a start and at least one stop.</div>
+      <details class="details"><summary>How the model works</summary>
+        <p>8-neighbour Dijkstra search on the native 20 m DEM using Mars-sphere geodesic edge lengths; no diagonal corner-cutting, no interpolation across nodata.</p>
+        <p><b>Walking time</b> uses the slope-dependent Tobler (1993) hiking function normalised to your flat speed: <code>v = v₀·e^(−3.5(|g+0.05|−0.05))</code>. It is an Earth hiking heuristic — not validated for pressurised suits or Mars gravity — and stands in for a suit-specific metabolic model.</p>
+        <p><b>Terrain-penalised</b> cost is <code>d·(1 + w·(Δz/d)²)</code>, retained from the M2 engine.</p>
+      </details>
+    </section>
+
+    <section class="section" id="resultsSection">
+      <div class="eyebrow">06 / traverse result</div>
+      <h2>Legs, budget & profile</h2>
+      <div id="planSummary"><p class="muted">No traverse planned yet.</p></div>
+      <div id="profileHost"></div>
+      <div id="legTable"></div>
+      <div class="form-actions"><button id="exportJson">Export plan JSON</button><button id="exportGeo">Export GeoJSON</button><button id="shareBtn">Copy share link</button></div>
+      <p id="exportStatus" class="hint" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <div class="panel hidden" id="sciencePanel" role="tabpanel">
+    <section class="section">
+      <div class="eyebrow">07 / science along the route</div>
+      <h2>Observations crossed</h2>
+      <div id="routeScience"><p class="muted">Plan a traverse to list the geologic units and spectral observations it crosses.</p></div>
+    </section>
+    <section class="section">
+      <div class="eyebrow">08 / mapped-stop screen</div>
+      <h2>Filter candidate stops</h2>
+      <div class="two"><div class="field"><label for="maxRange">Range from start km</label><input id="maxRange" type="number" min="0.1" max="50" step="any" value="5"></div><div class="field"><label for="maxBufferSlope">Max slope in 200 m buffer °</label><input id="maxBufferSlope" type="number" min="0" max="90" step="any" value="15"></div></div>
+      <button id="screenStops">Apply criteria</button>
+      <div id="candidateResults" class="hint">Uses only USGS SIM 3464 points with complete DEM coverage of their 200 m registration buffer.</div>
+    </section>
+    <section class="section">
+      <div class="eyebrow">09 / scientific context</div>
+      <h2>Region products</h2>
+      <div id="scienceContext"></div>
+      <details class="details"><summary>Ancient-water evidence</summary><p>Published lake and delta interpretations describe past geological processes. They are not accessible drinking water, extractable ice or a present resource inventory.</p><a href="https://science.nasa.gov/resource/jezero-craters-ancient-lakeshore/" target="_blank" rel="noreferrer">NASA · Jezero ancient lakeshore context ↗</a></details>
+    </section>
+  </div>
+
+  <div class="panel hidden" id="envPanel" role="tabpanel">
+    <section class="section">
+      <div class="eyebrow">10 / environmental intelligence</div>
+      <h2>Historical MEDA observation</h2>
+      <div id="medaPanel"></div>
+      <div class="field"><label for="sensorSelect">Near-surface air temperature detector</label><select id="sensorSelect"></select></div>
+      <canvas id="medaChart" class="mini-chart" width="560" height="220" role="img" aria-label="MEDA five-minute mean temperature by local mean solar time"></canvas>
+      <div id="medaStats" class="hint"></div>
+      <div class="card"><span class="status-label warn">MARCI · DATED REGIONAL DUST CONTEXT</span><div id="dustContext" class="data-copy"></div></div>
+      <div class="card"><span class="status-label off">RADIATION · JEZERO SURFACE UNAVAILABLE</span><div id="radContext" class="data-copy"></div></div>
+      <p class="hint">No current Jezero temperature, wind, opacity, storm forecast or ionizing-radiation surface exists in this product; none is simulated.</p>
+    </section>
+  </div>
+
+  <div class="panel hidden" id="sourcesPanel" role="tabpanel">
+    <section class="section">
+      <div class="eyebrow">11 / provenance</div>
+      <h2>Embedded sources</h2>
+      <div class="footer-note">
+        <p><a href="https://trek.nasa.gov/mars/" target="_blank" rel="noreferrer">NASA Mars Trek CTX mosaic ↗</a> · controlled orbital imagery of Jezero.</p>
+        <p><a href="https://astrogeology.usgs.gov/search/map/mars_2020_science_investigation_ctx_dem_mosaic" target="_blank" rel="noreferrer">USGS Mars 2020 CTX DEM ↗</a> · 20 m elevation; slope derived here.</p>
+        <p><a href="https://doi.org/10.3133/sim3464" target="_blank" rel="noreferrer">USGS SIM 3464 · Sun &amp; Stack (2020) ↗</a> · map units and LocationFeatures.</p>
+        <p><a href="https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_057/frt000047a3/" target="_blank" rel="noreferrer">MRO CRISM MTRDR FRT000047A3 ↗</a> · D2300 parameter.</p>
+        <p><a href="https://doi.org/10.5281/zenodo.4931348" target="_blank" rel="noreferrer">Edwards &amp; Buz (2021) ↗</a> · THEMIS-derived thermal inertia.</p>
+        <p><a href="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/PERSEVERANCE/meda.html" target="_blank" rel="noreferrer">NASA PDS MEDA ↗</a> · Perseverance sol 15 observations.</p>
+        <p><a href="https://mars.nasa.gov/mars2020/multimedia/raw-images/" target="_blank" rel="noreferrer">Mars 2020 raw images ↗</a> · rover ground-level imagery of the delta (not yet position-linked here).</p>
+      </div>
+      <details class="details" open><summary>Integrity checksums</summary><div id="hashPanel" class="footer-note"></div></details>
+      <p class="hint">Products are derived from the cited datasets by the MARSWALK pipeline (see repository). Nothing in this file is a live measurement, forecast or certification of safety.</p>
+    </section>
+  </div>
+</aside>
+</main>
+
+<dialog id="helpDlg" class="dlg" aria-labelledby="helpTitle">
+  <h2 id="helpTitle">Plan a Marswalk in four steps</h2>
+  <ol class="steps">
+    <li><b>Set a start</b> — choose <i>Set start</i> and click inside the dashed terrain boundary (habitat or lander).</li>
+    <li><b>Add science stops</b> — click mapped crater points, use <i>Add stop</i>, or pick from the list. Three or more make a full traverse.</li>
+    <li><b>Plan traverse</b> — the planner finds the fastest order and path while treating red slope cells and reported obstructions as impassable.</li>
+    <li><b>Go to the field</b> — open <i>Visor HUD</i> and play the traverse in 2D or the 3D astronaut view. Mark an obstruction at any time and the route recalculates instantly.</li>
+  </ol>
+  <p class="hint">Keyboard: <kbd>I</kbd> inspect · <kbd>S</kbd> start · <kbd>W</kbd> add stop · <kbd>O</kbd> obstruction · <kbd>H</kbd> HUD · <kbd>F</kbd> fit · arrows pan · <kbd>+</kbd>/<kbd>−</kbd> zoom.</p>
+  <p class="hint">All measurements come from NASA/USGS orbital and rover products. Times, reserves and slope limits are your stated assumptions — this is a planning demonstrator, not flight software.</p>
+  <form method="dialog"><button class="primary">Start planning</button></form>
+</dialog>
+
+<dialog id="challengeDlg" class="dlg wide" aria-labelledby="chTitle">
+  <h2 id="chTitle">Challenge #10 objective coverage</h2>
+  <div id="challengeTable"></div>
+  <form method="dialog"><button class="primary">Close</button></form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script id="mars-data" type="application/json">/*__DATA__*/</script>
+<script>/*__JS__*/</script>
+</body>
+</html>
