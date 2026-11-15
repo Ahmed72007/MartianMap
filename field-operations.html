@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#170f12">
 <title>MARS // Field Operations</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <style>
   :root { color-scheme: dark; --ink:#f6e9df; --muted:#bd9c91; --line:rgba(255,218,198,.2); --panel:rgba(22,14,17,.78); --hot:#ff805d; --cyan:#70ebdd; --gold:#ffd28b; }
@@ -154,6 +155,12 @@
   .real-link { display:block; margin-top:10px; padding:10px 12px; border:1px solid #70ebdd66; border-radius:6px; color:var(--cyan); font:10px/1.5 ui-monospace,monospace; letter-spacing:.08em; text-decoration:none; text-align:center; }
   .real-link:hover { background:#70ebdd14; }
   .real-link.jezero { border-color:var(--cyan); background:#70ebdd1f; font-weight:700; }
+  .sound-btn,.home-btn{margin-left:auto;width:34px;height:34px;display:grid;place-items:center;border-radius:12px;border:1px solid rgba(255,218,198,.25);background:rgba(255,255,255,.06);color:var(--ink);font-size:15px;cursor:pointer;text-decoration:none;backdrop-filter:blur(10px);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+  .home-btn{margin-left:6px}.sound-btn:hover,.home-btn:hover{transform:translateY(-2px) scale(1.06)}.sound-btn:active,.home-btn:active{transform:scale(.9)}
+  .map-brand{display:flex;align-items:center}
+  .panel,.pill,.insight-panel,.score-card,#mapFrame,.pause-card,.sequence-card{backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
+  #landBtn:not(:disabled){transition:transform .35s cubic-bezier(.3,1.6,.5,1),box-shadow .3s;box-shadow:0 10px 30px rgba(255,128,93,.35)}
+  #landBtn:not(:disabled):hover{transform:translateY(-2px)}#landBtn:not(:disabled):active{transform:scale(.96)}
   #landBtn:disabled { color:#765c54; background:#483431; box-shadow:none; cursor:not-allowed; }
   .map-disclaimer { margin-top:10px; color:#836d67; font-size:7px; line-height:1.45; text-align:center; }
   .leaflet-container { background:#6d4034; font-family:ui-monospace,monospace; }
@@ -201,7 +208,7 @@
     <div class="map-help">DRAG TO PAN · SCROLL TO ZOOM · CLICK A GRID CELL</div>
   </div>
   <aside class="insight-panel">
-    <div class="map-brand"><div class="brand-mark">M</div><div class="map-brand-title">MARS FIELD OPS<small>LANDING SITE RECONNAISSANCE</small></div></div>
+    <div class="map-brand"><div class="brand-mark">M</div><div class="map-brand-title">MARS FIELD OPS<small>LANDING SITE RECONNAISSANCE</small></div><button class="sound-btn" data-sound-toggle aria-label="Toggle sound">🔊</button><a class="home-btn" href="index.html" aria-label="Back to home">⌂</a></div>
     <div class="panel-kicker">SELECTED GRID CELL</div>
     <h1 id="selectedName">Choose a landing cell</h1>
     <div id="selectedCoords">Click the map grid or a named feature pin to inspect this region.</div>
@@ -211,7 +218,7 @@
     <div id="insightMetrics"></div>
     <div class="hazards"><div class="hazards-title">HAZARDS / FIELD NOTES</div><ul id="hazardList"><li>Awaiting site selection.</li></ul></div>
     <div class="illustrative-note">Illustrative data. Real NASA layers can replace this (THEMIS, CRISM, MOLA, RAD).</div>
-    <button id="recommendBtn">✦ RECOMMEND BEST SITES</button><div id="recommendStatus"></div>
+    <button id="recommendBtn" data-sfx="success">✦ RECOMMEND BEST SITES</button><div id="recommendStatus"></div>
     <button id="landBtn" disabled>LAND HERE</button>
     <a id="realDataLink" class="real-link" href="marswalk.html">Plan a real Jezero traverse with NASA / USGS data → MARSWALK</a>
     <div class="map-disclaimer">SURFACE LAYERS ARE REMOTE IMAGERY · SITE INSIGHTS ARE SIMULATED</div>
@@ -251,6 +258,7 @@
 <div id="landingSequence"><div class="sequence-card"><div class="sequence-label">MARS ENTRY CORRIDOR</div><div id="descentStep">ENTRY</div><div id="descentCount">AUTONOMOUS DESCENT IN 5</div></div></div>
 <div id="pauseScreen"><div class="pause-card"><div class="sequence-label">SUIT LINK PAUSED</div><h2>MISSION ON HOLD</h2><p>Mouse control released. Resume exploration or return to the mission map.</p><button id="resumeBtn">RESUME SUIT LINK</button><button id="returnMapBtn">RETURN TO MAP</button></div></div>
 <div id="webglError" style="display:none;position:fixed;z-index:20;inset:0;background:#170f12;color:#f6e9df;padding:12vw;font:14px/1.7 monospace">This demo needs WebGL and an internet connection to load the pinned Three.js library. Open it in a recent Chrome or Edge browser.</div>
+<script src="sound.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
@@ -383,6 +391,7 @@
     return score;
   }
   function chooseCell(cell) {
+    if(window.SFX)SFX.select();
     selectedCell=cell;const insights=getCellInsights(cell.id);selectedCell.insights=insights;scoreMetrics(cell,insights);
     $('recommendStatus').textContent='';
     if(leafletMap){
@@ -759,7 +768,7 @@
   let autoPausedAt=0, gameFrameId=0, paused=false, hadLock=false, snapCamera=true, lookDrag=null;
   const locked=()=>document.pointerLockElement===renderer.domElement;
   function tryLock(){ if(matchMedia('(pointer:coarse)').matches)return; try{const r=renderer.domElement.requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(e){} }
-  function setPaused(on){ paused=on;$('pauseScreen').classList.toggle('show',on);if(on){for(const k of Object.keys(keys))keys[k]=false;if(locked())document.exitPointerLock();}else{clock.getDelta();startGameLoop();} }
+  function setPaused(on){ if(window.SFX&&on!==paused)SFX.whoosh(!on); paused=on;$('pauseScreen').classList.toggle('show',on);if(on){for(const k of Object.keys(keys))keys[k]=false;if(locked())document.exitPointerLock();}else{clock.getDelta();startGameLoop();} }
   function look(dx,dy){ cameraYaw-=dx*CONFIG.controls.mouseSensitivity;cameraPitch=THREE.MathUtils.clamp(cameraPitch-dy*CONFIG.controls.mouseSensitivity,CONFIG.camera.minPitch,CONFIG.camera.maxPitch); }
   sceneCanvas.addEventListener('pointerdown',e=>{ if(appState!=='game'||paused)return; if(!locked())tryLock(); lookDrag={x:e.clientX,y:e.clientY,id:e.pointerId}; });
   window.addEventListener('pointermove',e=>{ if(!lookDrag||locked()||e.pointerId!==lookDrag.id)return; look((e.clientX-lookDrag.x)*1.6,(e.clientY-lookDrag.y)*1.6);lookDrag.x=e.clientX;lookDrag.y=e.clientY; });
@@ -944,7 +953,7 @@
     const swing=moving?Math.sin(elapsed*(running?11:7.2))*Math.min(1,planarSpeed/3):0;
     legPivots[0].rotation.x=swing;legPivots[1].rotation.x=-swing;armPivots[0].rotation.x=-swing*.68;armPivots[1].rotation.x=swing*.68;
     stepClock+=dt*(running?1.45:1);
-    if(moving&&player.onGround&&stepClock>(running ? .26 : .43)){stepClock=0;spawnDust();}
+    if(moving&&player.onGround&&stepClock>(running ? .26 : .43)){stepClock=0;spawnDust();if(window.SFX)SFX.step();}
     for(const p of dustPool){if(!p.mesh.visible)continue;p.life-=dt;if(p.life<=0){p.mesh.visible=false;continue;}p.mesh.position.addScaledVector(p.velocity,dt);p.velocity.y-=.18*dt;p.mesh.scale.multiplyScalar(1-dt*.65);}
     return running;
   }
@@ -972,6 +981,7 @@
     if(appState!=='map'||!selectedCell)return;
     const insights=selectedCell.insights||getCellInsights(selectedCell.id);
     applyCellToWorld(selectedCell,insights);
+    if(window.SFX){SFX.whoosh(false);setTimeout(()=>SFX.whoosh(true),1500);}
     appState='landing';enableLeafletInteractions(false);$('missionMapScreen').classList.add('depart');$('landingSequence').classList.add('show');
     $('descentStep').textContent='ENTRY';$('descentCount').textContent='AUTONOMOUS DESCENT IN 5';
     tryLock();
@@ -979,6 +989,7 @@
     setTimeout(()=>{$('descentStep').textContent='LANDING';$('descentCount').textContent='SURFACE CONTACT IN 2';},2950);
     setTimeout(()=>{
       $('missionMapScreen').classList.remove('depart');$('landingSequence').classList.remove('show');
+      if(window.SFX)SFX.success();
       appState='game';document.body.classList.add('state-game');paused=false;snapCamera=true;$('pauseScreen').classList.remove('show');
       $('lockHint').classList.toggle('show',!locked()&&!matchMedia('(pointer:coarse)').matches);
       elapsed=0;lastStorm=0;stormVisibleUntil=0;clock.start();startGameLoop();
@@ -1000,7 +1011,7 @@
       const dt=Math.min(clock.getDelta(),.05);elapsed+=dt;
       const running=updatePlayer(dt);updateCamera(dt);updateHUD(dt,elapsed,running);
       if(trail.length===0||Math.hypot(player.x-lastTrailX,player.z-lastTrailZ)>4){trail.push({x:player.x,z:player.z});lastTrailX=player.x;lastTrailZ=player.z;if(trail.length>750)trail.shift();}
-      if(elapsed-lastStorm>=CONFIG.hud.stormAfterSeconds){lastStorm=elapsed;stormVisibleUntil=elapsed+CONFIG.hud.stormDurationSeconds;$('storm').classList.add('show');}
+      if(elapsed-lastStorm>=CONFIG.hud.stormAfterSeconds){lastStorm=elapsed;stormVisibleUntil=elapsed+CONFIG.hud.stormDurationSeconds;$('storm').classList.add('show');if(window.SFX)SFX.error();}
       if(elapsed>stormVisibleUntil)$('storm').classList.remove('show');
       drawMap($('minimap'));if(fullMapOpen)drawMap($('largeMap'));
       renderer.render(scene,camera);gameFrameId=requestAnimationFrame(frame);

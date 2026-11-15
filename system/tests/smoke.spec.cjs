@@ -95,6 +95,12 @@ const shots = process.argv.includes('--shots') ? process.argv[process.argv.index
     if (shots) await page.screenshot({ path: `${shots}/challenge.png` });
     await page.click('#challengeDlg button'); await page.click('#helpBtn'); assert.ok(await page.locator('#helpDlg').isVisible()); await page.click('#helpDlg button');
   });
+  await step('sound engine plays every cue and mute persists', async () => {
+    const r = await page.evaluate(async () => { const out = []; for (const k of ['tap', 'select', 'place', 'success', 'error', 'whoosh', 'step']) { SFX[k](true); out.push(k); } SFX.toggle(true); SFX.toggle(false);
+      await new Promise(r => setTimeout(r, 300)); SFX.setMuted(true); const m = localStorage.getItem('marswalk-sound-muted'); SFX.setMuted(false); return [out.length, m, document.getElementById('soundBtn').getAttribute('aria-pressed')]; });
+    assert.deepEqual(r, [7, '1', 'true']);
+  });
+  await step('favicon is embedded', async () => { assert.match(await page.evaluate(() => document.querySelector('link[rel=icon]').href), /^data:image\/svg\+xml,%3Csvg/); });
   assert.deepEqual(errors.filter(e => !/three|cdn\.jsdelivr|ERR_/.test(e)), []);
   console.log('ALL PASSED'); await browser.close();
 })().catch(e => { console.error('FAILED', e); process.exit(1); });

@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import re
+import urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,10 +54,14 @@ def main() -> None:
     template = (SRC / 'template.html').read_text(encoding='utf-8')
     css = (SRC / 'styles.css').read_text(encoding='utf-8')
     js = (SRC / 'app.js').read_text(encoding='utf-8')
-    if '</script' in js.lower():
-        raise SystemExit('app.js must not contain a closing script tag')
+    sound = (ROOT / 'sound.js').read_text(encoding='utf-8')
+    favicon = urllib.parse.quote((ROOT / 'favicon.svg').read_text(encoding='utf-8').strip(), safe='=:/,')
+    if '</script' in (js + sound).lower():
+        raise SystemExit('app.js / sound.js must not contain a closing script tag')
     out = (template.replace('/*__CSS__*/', css, 1)
+                   .replace('/*__SOUND__*/', sound, 1)
                    .replace('/*__JS__*/', js, 1)
+                   .replace('/*__FAVICON__*/', favicon)
                    .replace('/*__DATA__*/', data, 1))
     Path(args.out).write_text(out, encoding='utf-8')
     print(f'wrote {args.out} · {len(out.encode()) / 1e6:.2f} MB · data sha256 {hashlib.sha256(data.encode()).hexdigest()[:16]}…')

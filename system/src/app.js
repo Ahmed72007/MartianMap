@@ -4,6 +4,7 @@
  * All measured values come from the embedded NASA/USGS-derived products. */
 (() => {
 const $ = id => document.getElementById(id);
+const sfx = (name, ...a) => { try { window.SFX?.[name](...a); } catch {} };
 const R = 3396190, RAD = Math.PI / 180;
 const DIRS = [[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1],[-1,-1]];
 const OBJ_COLOR = { time: '#b7a6f0', terrain: '#f4ad79', distance: '#8cdbcb' };
@@ -159,7 +160,7 @@ function wpCell(wp) { const [x, y] = project(...wp.ll); return cellAt(x, y); }
 async function planTraverse({ quiet = false } = {}) {
   if (S.busy) return;
   const status = $('planStatus');
-  const fail = msg => { status.className = 'status-bar error'; status.textContent = msg; S.plan = null; renderPlan(); queueDraw(); return false; };
+  const fail = msg => { sfx('error'); status.className = 'status-bar error'; status.textContent = msg; S.plan = null; renderPlan(); queueDraw(); return false; };
   let st; try { st = settings(); } catch (e) { return fail(e.message); }
   const wps = S.waypoints;
   if (!wps.length || wps[0].kind !== 'start') return fail('Set a start point first (Set start, then click the map).');
@@ -198,6 +199,7 @@ async function planTraverse({ quiet = false } = {}) {
     status.className = 'status-bar ok';
     status.textContent = `Traverse ready · ${legs.length} legs · searched in ${fmt(plan.ms / 1000, 2)} s in this browser`;
     renderPlan(); renderRouteScience(); writeHash(); queueDraw(); if (S.v3) S.v3.setRoute();
+    sfx(quiet ? 'select' : plan.margin >= 0 ? 'success' : 'error');
     if (!quiet) toast(plan.margin >= 0 ? `Traverse fits the ${st.limit}-min limit with ${fmtMin(plan.margin)} spare` : `Traverse exceeds the EVA limit by ${fmtMin(-plan.margin)}`);
     return true;
   } catch (e) { return fail(e.message || String(e)); }
@@ -394,7 +396,7 @@ function addWaypoint(kind, ll, meta = {}) {
     if (S.waypoints[0]?.kind === 'start') S.waypoints[0] = wp; else S.waypoints.unshift(wp); }
   else { if (S.waypoints.filter(w => w.kind === 'stop').length >= MAX_STOPS) { toast(`Up to ${MAX_STOPS} stops (exact order search)`); return false; }
     S.waypoints.push({ id: meta.id || 'W' + (++S.wpSeq), kind, ll: sn.ll, label: meta.label || `Stop ${S.waypoints.filter(w => w.kind === 'stop').length + 1}`, source: meta.source || 'user' }); }
-  afterWaypointsChanged(); return true;
+  sfx('place'); afterWaypointsChanged(); return true;
 }
 function addSimStop(id) { const f = S.region.stops.features.find(x => String(x.id) === String(id)); if (!f) return;
   if (S.waypoints.some(w => w.id === f.id)) { toast(`${f.properties.map_label} is already a stop`); return; }
@@ -411,7 +413,7 @@ function renderWaypoints() {
   if (!S.waypoints.length) { list.innerHTML = '<li class="empty">No waypoints yet — use <b>Set start</b> and <b>Add stop</b> on the map, or load the demo.</li>'; return; }
   const order = S.plan?.order;
   list.innerHTML = S.waypoints.map((w, k) => `<li><span class="wp-badge ${w.kind}">${w.kind === 'start' ? 'S' : order ? order.indexOf(k) : k}</span><div><b>${esc(w.label)}</b><small>${fmtLL(w.ll)} · ${esc(w.source)}</small></div><div class="wp-actions">${w.kind === 'stop' ? `<button data-up="${k}" aria-label="Move ${esc(w.label)} up" ${k <= 1 ? 'disabled' : ''}>↑</button>` : ''}<button data-zoom="${k}" aria-label="Show ${esc(w.label)} on map">◎</button><button data-del="${k}" aria-label="Remove ${esc(w.label)}">✕</button></div></li>`).join('');
-  list.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { S.waypoints.splice(+b.dataset.del, 1); afterWaypointsChanged(); });
+  list.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { sfx('toggle', false); S.waypoints.splice(+b.dataset.del, 1); afterWaypointsChanged(); });
   list.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const k = +b.dataset.up; [S.waypoints[k - 1], S.waypoints[k]] = [S.waypoints[k], S.waypoints[k - 1]]; afterWaypointsChanged(); });
   list.querySelectorAll('[data-zoom]').forEach(b => b.onclick = () => { const [x, y] = project(...S.waypoints[+b.dataset.zoom].ll); S.view.cx = x; S.view.cy = y; S.view.zoom = Math.max(S.view.zoom, 3); queueDraw(); });
 }
@@ -431,7 +433,7 @@ function loadDemo() {
 /* ---------- obstacles ---------- */
 function addObstacle(x, y) {
   if (cellAt(x, y) < 0) { toast('Obstructions can only be placed inside terrain coverage'); return; }
-  S.obstacles.push({ x, y, r: Number($('obstacleRadius').value), id: Date.now() });
+  S.obstacles.push({ x, y, r: Number($('obstacleRadius').value), id: Date.now() }); sfx('place');
   renderObstacles(); queueDraw();
   if (S.plan) replan('Obstruction reported'); else toast('Obstruction recorded — routes will avoid it');
 }
@@ -601,11 +603,12 @@ function tick(ts) {
   const dt = S.play.last ? (ts - S.play.last) / 1000 : 0; S.play.last = ts;
   S.play.t = Math.min(S.plan.totalS, S.play.t + dt * Number($('playSpeed').value));
   updateHud(); queueDraw(); if (S.v3) S.v3.follow();
-  if (S.play.t >= S.plan.totalS) { setPlaying(false); toast('Traverse playback complete'); return; }
+  if (S.play.t >= S.plan.totalS) { setPlaying(false); sfx('success'); toast('Traverse playback complete'); return; }
   requestAnimationFrame(tick);
 }
 function setPlaying(on) { if (!S.plan) return; if (on && S.play.t >= S.plan.totalS) S.play.t = 0; S.play.playing = on; S.play.last = 0; $('playBtn').textContent = on ? '❚❚ Pause' : '▶ Play traverse'; if (on) requestAnimationFrame(tick); }
 function setHud(on) {
+  sfx('whoosh', on);
   S.hud = on; $('hud').classList.toggle('hidden', !on); $('hudBtn').classList.toggle('active', on); $('hudBtn').textContent = on ? 'Planner view' : 'Visor HUD';
   $('mapArea').classList.toggle('hud-on', on);
   if (on && !S.plan) toast('Plan a traverse to drive the HUD');
@@ -616,6 +619,7 @@ function setHud(on) {
 
 /* ---------- 3D view (three.js loaded on demand) ---------- */
 async function show3d(on) {
+  if (on !== S.active3d) sfx('whoosh', on);
   S.active3d = on; $('tab2d').classList.toggle('active', !on); $('tab3d').classList.toggle('active', on);
   $('tab2d').setAttribute('aria-selected', String(!on)); $('tab3d').setAttribute('aria-selected', String(on));
   $('view3d').classList.toggle('hidden', !on); $('note3d').classList.toggle('hidden', !on); document.querySelector('.map-tools').classList.toggle('hidden', on); $('map').classList.toggle('hidden', on);
@@ -750,7 +754,7 @@ function actAt(x, y) {
   if (S.mode === 'start') { if (addWaypoint('start', unproject(x, y))) { setMode('inspect'); toast('Start set'); } }
   else if (S.mode === 'stop') { const f = nearestStop(x, y); if (f) addSimStop(f.id); else addWaypoint('stop', unproject(x, y)); }
   else if (S.mode === 'obstacle') addObstacle(x, y);
-  else inspect(x, y);
+  else { sfx('tap'); inspect(x, y); }
 }
 function setup() {
   ['imageryOn', 'hazardOn', 'elevationOn', 'slopeOn', 'thermalOn', 'crismOn', 'geologyOn', 'stopsOn'].forEach(id => $(id).addEventListener('change', () => { renderLegend(); queueDraw(); }));
@@ -780,7 +784,10 @@ function setup() {
   $('fullBtn').onclick = () => { const el = $('mapShell'); document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen?.().catch(() => toast('Fullscreen unavailable')); };
   $('legendToggle').onclick = () => { const c = $('legend').classList.toggle('collapsed'); $('legendToggle').setAttribute('aria-expanded', String(!c)); $('legendToggle').textContent = c ? 'Legend ▸' : 'Legend ▾'; };
   if (matchMedia('(max-width: 600px)').matches) $('legendToggle').onclick();
-  $('helpBtn').onclick = () => $('helpDlg').showModal(); $('challengeBtn').onclick = () => $('challengeDlg').showModal();
+  $('helpBtn').onclick = () => { sfx('whoosh', true); $('helpDlg').showModal(); }; $('challengeBtn').onclick = () => { sfx('whoosh', true); $('challengeDlg').showModal(); };
+  // liquid ripple on every button press
+  document.addEventListener('pointerdown', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2, i = document.createElement('i');
+    i.className = 'ripple'; i.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`; b.appendChild(i); setTimeout(() => i.remove(), 650); }, { passive: true });
   // map pointer handling (pan, pinch, click)
   const c = canvas();
   c.addEventListener('pointerdown', e => { c.setPointerCapture(e.pointerId); S.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
