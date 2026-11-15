@@ -5,7 +5,7 @@ NASA Space Apps 2026 · Challenge #10. Open **[index.html](index.html)** for the
 | File | What it is | Data |
 |---|---|---|
 | [`marswalk.html`](marswalk.html) | **Field Systems planner.** Single file, works offline. Plans multi-stop science traverses on the Jezero western delta, with slope-hazard avoidance, re-routing around reported obstructions, a suited-walking time budget, a visor HUD and a 3D astronaut view. | Real NASA/USGS products embedded: CTX imagery, 20 m CTX DEM + slope, THEMIS thermal inertia, CRISM D2300, USGS SIM 3464 geology, Perseverance MEDA |
-| [`field-operations.html`](field-operations.html) | **Field Operations game.** Pick a landing cell on a global Mars map, descend, and explore on foot (keyboard/mouse or touch). | NASA Mars Trek global basemap. Site scores and telemetry are fictional and labelled *simulated*. |
+| [`field-operations.html`](field-operations.html) | **Field Operations game.** Pick a landing cell on a global Mars map, land, then complete the EVA: reach the ice deposit, collect a sample and return to the lander before oxygen or battery run out (1–3 star rating). Keyboard/mouse or touch. | NASA Mars Trek global basemap. Site scores and telemetry are fictional and labelled *simulated*. |
 
 Open either file in a recent Chrome, Edge, Firefox or Safari. The planner's 2D map, routing, HUD and data panels need no network; its 3D view and the game load three.js / Leaflet from jsDelivr.
 
@@ -34,4 +34,4 @@ node system/tests/game.spec.cjs
 ```
 
 ## Deploying on Vercel
-The site is plain static HTML with no build step. `vercel.json` sets `framework: null` and empty build/install commands, and the output directory is the repo root. Import the repository in Vercel and keep the defaults, or run `vercel --prod`. `cleanUrls` serves `/marswalk` and `/field-operations`. `.vercelignore` keeps the source and tests out of the deployment.
+The site is plain static HTML with no build step. `vercel.json` sets `framework: null` and empty build/install commands, and the output directory is the repo root. Import the repository in Vercel and keep the defaults, or run `vercel --prod`. `cleanUrls` serves `/marswalk` and `/field-operations`. `.vercelignore` keeps the source and tests out of the deployment. `vercel.json` also sends a Content-Security-Policy (only `self`, jsDelivr for Leaflet/three.js and NASA Mars Trek tiles are allowed), Permissions-Policy and nosniff headers, and `404.html` is the branded not-found page.

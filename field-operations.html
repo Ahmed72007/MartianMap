@@ -108,6 +108,7 @@
   @keyframes mapDepart { 0%{opacity:1;transform:scale(1);filter:blur(0)} 65%{opacity:.65;transform:scale(1.08);filter:blur(1px)} 100%{opacity:0;transform:scale(1.2);filter:blur(6px)} }
   .map-stage { position:relative; min-width:0; overflow:hidden; background:#5d352e; }
   #marsMap,#fallbackMapCanvas { position:absolute; inset:0; width:100%; height:100%; background:#6e3e31; }
+  #marsMap { z-index:0; } /* contain Leaflet's z-index:400 panes so map overlays stay on top */
   #fallbackMapCanvas { display:none; z-index:1; cursor:grab; }
   #fallbackMapCanvas.dragging { cursor:grabbing; }
   #mapVeil { position:absolute; inset:0; z-index:2; pointer-events:none; background:linear-gradient(180deg,rgba(17,11,14,.57),transparent 18%,transparent 77%,rgba(14,9,11,.62)); }
@@ -122,7 +123,7 @@
   .map-coordinates { position:absolute; z-index:4; left:22px; bottom:17px; padding:8px 10px; color:#e8d5cb; background:#160d10cc; border:1px solid #f6d2bd33; font-size:9px; letter-spacing:.07em; pointer-events:none; }
   .map-help { position:absolute; z-index:4; right:20px; bottom:17px; color:#e8d5cb; padding:8px 10px; background:#160d10b8; font-size:8px; letter-spacing:.08em; pointer-events:none; }
   #mapFallbackNotice { position:absolute; z-index:4; top:126px; left:22px; display:none; max-width:330px; color:#ffe0c2; background:#49251fe8; border:1px solid #ffba9177; padding:9px 12px; font-size:9px; line-height:1.55; }
-  #mapFallbackNotice.show { display:block; }
+  #mapFallbackNotice.show { display:block; cursor:pointer; }
   .insight-panel { position:relative; z-index:5; overflow:auto; padding:25px 21px 18px; background:linear-gradient(160deg,#221619,#140f12 75%); border-left:1px solid #f2b79a3c; box-shadow:-20px 0 60px #10080a55; }
   .map-brand { display:flex; align-items:center; gap:11px; padding-bottom:17px; border-bottom:1px solid #f5c9b233; }
   .map-brand .brand-mark { flex:none; }
@@ -190,6 +191,82 @@
     #mapFrame { left:12px; bottom:12px; width:174px; height:174px; } #mission { right:10px; bottom:12px; width:214px; padding:10px; }
     .readout { min-height:25px; font-size:9px; } .value { font-size:11px; }
   }
+
+  /* ===== Liquid-glass polish (map screen, overlays, HUD) ===== */
+  :root{--glass:rgba(30,18,20,.46);--glass-hi:rgba(255,240,230,.10);--edge:rgba(255,222,204,.18);--spring:cubic-bezier(.3,1.6,.5,1)}
+  .map-title-badge,.map-status,.map-coordinates,.map-help,#mapFallbackNotice,.layer-switch{border-radius:14px;backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);border:1px solid var(--edge);background:linear-gradient(150deg,rgba(40,24,26,.62),rgba(20,12,15,.5));box-shadow:0 10px 30px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08)}
+  .layer-switch{padding:4px;gap:4px}
+  .layer-switch button{border:0;border-radius:10px;background:transparent;transition:background .25s,color .25s,transform .35s var(--spring)}
+  .layer-switch button:hover{background:rgba(255,255,255,.07);transform:translateY(-1px)}
+  .layer-switch button.active{background:linear-gradient(150deg,#ffc4a1,#f08a63);color:#22110d;box-shadow:0 6px 18px rgba(240,138,99,.35),inset 0 1px 0 rgba(255,255,255,.5)}
+  .insight-panel{background:linear-gradient(165deg,rgba(44,26,28,.92),rgba(18,12,15,.96) 70%);border-left:1px solid var(--edge)}
+  .insight-panel::before{content:"";position:absolute;inset:0 0 auto 0;height:220px;pointer-events:none;background:radial-gradient(ellipse at 80% 0,rgba(255,128,93,.18),transparent 70%)}
+  #selectedName{font-size:22px;transition:opacity .3s}
+  #profileSelect{border-radius:10px;background:rgba(0,0,0,.25);transition:border-color .2s}
+  #profileSelect:focus{outline:none;border-color:#ffb38f;box-shadow:0 0 0 3px rgba(255,179,143,.18)}
+  .score-card{border-radius:16px;background:linear-gradient(150deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border-color:var(--edge)}
+  #scoreRing{--p:0;--c:#7ce6d3;border:0;position:relative;background:conic-gradient(var(--c) calc(var(--p)*1%),rgba(255,255,255,.08) 0);box-shadow:0 0 22px color-mix(in srgb,var(--c) 30%,transparent);font-weight:700}
+  #scoreRing::before{content:"";position:absolute;inset:4px;border-radius:50%;background:#1b1214}
+  #scoreRing{isolation:isolate}#scoreRing::before{z-index:-1}
+  .insight-metric{animation:slideIn .45s var(--spring) backwards}
+  .insight-metric:nth-child(2){animation-delay:.04s}.insight-metric:nth-child(3){animation-delay:.08s}.insight-metric:nth-child(4){animation-delay:.12s}.insight-metric:nth-child(5){animation-delay:.16s}.insight-metric:nth-child(6){animation-delay:.2s}
+  @keyframes slideIn{from{opacity:0;transform:translateX(10px)}}
+  .insight-bar{border-radius:4px}.insight-bar i{border-radius:4px;animation:grow .8s cubic-bezier(.2,.9,.3,1) backwards}
+  @keyframes grow{from{width:0!important}}
+  .hazards{border-radius:0 12px 12px 0;background:linear-gradient(120deg,rgba(80,36,30,.55),rgba(48,29,28,.35))}
+  #recommendBtn{border-radius:12px;background:linear-gradient(150deg,rgba(255,255,255,.08),rgba(255,255,255,.02));transition:transform .35s var(--spring),background .2s,border-color .2s}
+  #recommendBtn:hover{transform:translateY(-1px);border-color:#ffc6a7}#recommendBtn:active{transform:scale(.97)}
+  #landBtn{border-radius:14px;position:relative;overflow:hidden}
+  #landBtn:not(:disabled)::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-100%);animation:sheen 2.6s ease-in-out infinite}
+  @keyframes sheen{60%,100%{transform:translateX(100%)}}
+  .real-link{border-radius:12px;transition:transform .35s var(--spring),background .2s}.real-link:hover{transform:translateY(-1px)}
+  .leaflet-control-zoom{border:1px solid var(--edge)!important;border-radius:12px!important;overflow:hidden;backdrop-filter:blur(14px);box-shadow:0 8px 24px rgba(0,0,0,.3)!important}
+  .leaflet-control-zoom a{background:rgba(30,18,20,.6)!important;color:#f6e9df!important;border-color:var(--edge)!important}
+  .grid-label{opacity:.55}
+  .feature-pin b{padding:2px 6px;border-radius:8px;background:rgba(20,12,15,.55);backdrop-filter:blur(6px)}
+  .feature-pin:hover i{transform:scale(1.4)}.feature-pin i{transition:transform .3s var(--spring)}
+  /* HUD panels */
+  .panel,#mapFrame .map-title,.pill{border-radius:16px!important;border-color:var(--edge)!important;background:linear-gradient(150deg,rgba(40,24,26,.55),rgba(18,11,14,.45))!important}
+  .pill{border-radius:12px!important}
+  .meter,.meter i{border-radius:4px}.meter i{transition:width .4s ease}
+  #alert{position:absolute;left:50%;top:132px;transform:translate(-50%,-12px) scale(.96);opacity:0;padding:12px 20px;border-radius:16px;font-size:12px;letter-spacing:.12em;font-weight:700;background:rgba(20,30,28,.7);border:1px solid rgba(112,235,221,.5);color:#d9fff6;backdrop-filter:blur(16px);box-shadow:0 12px 40px rgba(0,0,0,.4);transition:all .45s var(--spring);pointer-events:none;white-space:nowrap}
+  #alert.show{opacity:1;transform:translate(-50%,0) scale(1)}
+  #alert.bad{background:rgba(70,16,16,.75);border-color:#ff7d6e;color:#ffe2dc}
+  #alert.good{background:rgba(16,60,48,.75);border-color:#70ebdd}
+  #hud.critical::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 160px rgba(220,40,40,.45);animation:crit 1.2s ease-in-out infinite alternate}
+  @keyframes crit{from{opacity:.35}to{opacity:1}}
+  /* briefing + end screens */
+  #briefing,#missionEnd{position:fixed;inset:0;z-index:13;display:none;place-items:center;padding:16px;background:radial-gradient(ellipse at 50% 40%,rgba(120,60,45,.35),rgba(12,7,9,.78) 70%);backdrop-filter:blur(3px)}
+  #briefing.show,#missionEnd.show{display:grid}
+  .brief-card{width:min(540px,100%);padding:28px 28px 24px;border-radius:24px;text-align:left;background:linear-gradient(150deg,rgba(52,32,32,.72),rgba(20,13,16,.66));border:1px solid var(--edge);backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12);animation:cardIn .55s var(--spring)}
+  @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.95)}}
+  .brief-card h2{margin:8px 0 14px;font-size:24px;letter-spacing:.04em;font-weight:600}
+  .brief-steps{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:9px;font-size:12px;line-height:1.55;color:#e8d5cb}
+  .brief-steps li{display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start}
+  .brief-steps b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:rgba(255,128,93,.2);border:1px solid rgba(255,160,130,.5);color:#ffb89c;font-size:11px}
+  .cy{color:var(--cyan)}
+  .key-grid{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:10px;color:#c9aea3;margin-bottom:18px}
+  .key-grid kbd{font:10px ui-monospace,monospace;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff0e6}
+  .glass-btn{padding:13px 18px;border-radius:14px;border:1px solid var(--edge);background:linear-gradient(150deg,rgba(255,255,255,.12),rgba(255,255,255,.04));color:var(--ink);font:bold 11px ui-monospace,monospace;letter-spacing:.18em;cursor:pointer;transition:transform .35s var(--spring),box-shadow .3s}
+  .glass-btn:hover{transform:translateY(-2px)}.glass-btn:active{transform:scale(.95)}
+  .glass-btn.primary{background:linear-gradient(150deg,#ffc4a1,#f0784f);color:#22110d;border-color:rgba(255,255,255,.4);box-shadow:0 10px 30px rgba(240,120,79,.4),inset 0 1px 0 rgba(255,255,255,.5)}
+  #beginBtn{width:100%}
+  .glass-btn:focus-visible,#landBtn:focus-visible,#recommendBtn:focus-visible{outline:2px solid #ffd2b8;outline-offset:3px}
+  .stars{display:flex;gap:8px;font-size:34px;margin:4px 0 14px}.stars span{color:rgba(255,255,255,.16);transform:scale(.6);animation:star .5s var(--spring) forwards}
+  .stars span:nth-child(2){animation-delay:.15s}.stars span:nth-child(3){animation-delay:.3s}
+  .stars span.on{color:#ffd28b;text-shadow:0 0 18px rgba(255,210,139,.7)}
+  @keyframes star{to{transform:scale(1)}}
+  .end-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+  .end-stats div{padding:10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+  .end-stats b{display:block;font-size:16px;color:#fff3ea}.end-stats small{font-size:9px;color:#bfa59a;letter-spacing:.06em}
+  .end-tip{font-size:11px;color:#c9aea3;line-height:1.55;margin:0 0 16px}
+  .end-actions{display:flex;gap:10px}.end-actions .glass-btn{flex:1}
+  #missionEnd.lose .brief-card{border-color:rgba(255,125,110,.4)}
+  #missionEnd.lose #endKicker{color:#ff9a86}#missionEnd.win #endKicker{color:var(--cyan)}
+  .pause-card,.sequence-card{border-radius:24px!important;border:1px solid var(--edge)!important;background:linear-gradient(150deg,rgba(52,32,32,.72),rgba(20,13,16,.66))!important;box-shadow:0 30px 80px rgba(0,0,0,.55)!important}
+  .pause-card button{border-radius:12px;transition:transform .35s var(--spring)}.pause-card button:hover{transform:translateY(-2px)}.pause-card button:active{transform:scale(.95)}
+  @media(max-width:520px){.end-stats{grid-template-columns:repeat(2,1fr)}#alert{font-size:10px;white-space:normal;text-align:center;width:88vw;top:110px}.brief-card{padding:22px 18px 18px}}
+  @media(prefers-reduced-motion:reduce){#landBtn::after,#hud.critical::after{animation:none}}
 </style>
 </head>
 <body>
@@ -241,14 +318,15 @@
     <div class="readout"><label>Suit battery</label><div class="value"><span id="battery">100</span><span class="unit">%</span></div><div class="meter"><i id="batteryMeter"></i></div></div>
   </section>
   <section id="mission" class="panel">
-    <div class="mission-title">ACTIVE WAYPOINT · ICE DEPOSIT</div>
+    <div class="mission-title" id="missionTitle">OBJECTIVE 1/2 · REACH ICE DEPOSIT</div>
     <div class="mission-main"><span>Range to target</span><span id="distance">1,240 m</span></div>
     <div class="bearing-wrap"><span id="bearingArrow">▲</span><span>BEARING <b id="bearing">000°</b></span></div>
-    <div class="mission-foot">FOLLOW THE CYAN BEAM TO INVESTIGATE</div>
+    <div class="mission-foot" id="missionFoot">FOLLOW THE CYAN BEAM · COLLECT A SAMPLE</div>
   </section>
   <div id="mapFrame"><div class="map-title" id="minimapTitle">GRID A1 // MARS</div><div class="map-credit" id="mapCredit">LOCAL TERRAIN</div><div class="map-north">N</div><canvas id="minimap" width="256" height="256"></canvas><div id="mapMode">GRID SIMULATED · M TO ROTATE</div></div>
   <div id="storm">⚠ SIMULATED DUST STORM IN 40 MIN · RETURN TO LANDING SITE</div>
   <div id="helmetOverlay"><div class="visor-label">EVA VISOR // ENVIRONMENT FEED</div><div class="visor-status">SUIT LINK <b>●</b></div><div class="visor-bottom">GAME SIMULATION · TELEMETRY AND HAZARDS ARE FICTIONAL</div></div>
+  <div id="alert" role="status" aria-live="polite"></div>
   <div id="crosshair"></div>
   <div id="lockHint">CLICK THE VIEW TO CAPTURE THE MOUSE · OR DRAG TO LOOK · ESC TO PAUSE</div>
   <div id="touchPad" aria-hidden="true"><button data-key="KeyW">▲</button><button data-key="KeyA">◀</button><button data-key="KeyS">▼</button><button data-key="KeyD">▶</button><button data-key="KeyV" class="tp-small">VIEW</button><button data-key="KeyP" class="tp-small">II</button></div>
@@ -256,6 +334,21 @@
 <div id="fullMap"><div class="full-map-card"><div class="full-map-title">MARS // SURFACE RECONNAISSANCE</div><div class="full-map-close">TAB TO CLOSE · M TO ROTATE</div><canvas id="largeMap" width="900" height="900"></canvas></div></div>
 <!-- LANDING: short map-to-surface descent sequence. -->
 <div id="landingSequence"><div class="sequence-card"><div class="sequence-label">MARS ENTRY CORRIDOR</div><div id="descentStep">ENTRY</div><div id="descentCount">AUTONOMOUS DESCENT IN 5</div></div></div>
+<div id="briefing" role="dialog" aria-modal="true" aria-labelledby="briefTitle"><div class="brief-card">
+  <div class="sequence-label">MISSION BRIEFING · SIMULATION</div>
+  <h2 id="briefTitle">Touchdown confirmed</h2>
+  <ol class="brief-steps"><li><b>1</b><span>Follow the <span class="cy">cyan beam</span> to the ice deposit and collect a sample.</span></li><li><b>2</b><span>Return to the landing beacon before oxygen or battery reach zero.</span></li><li><b>3</b><span>Walk to conserve reserves — sprinting burns them fast. Return with ≥45% O₂ for 3 stars.</span></li></ol>
+  <div class="key-grid"><span><kbd>W A S D</kbd> move</span><span><kbd>Mouse</kbd> look / drag</span><span><kbd>Shift</kbd> sprint</span><span><kbd>Space</kbd> jump</span><span><kbd>V</kbd> helmet view</span><span><kbd>Tab</kbd> big map</span><span><kbd>Esc</kbd> pause</span></div>
+  <button id="beginBtn" class="glass-btn primary" data-sfx="success">BEGIN EVA</button>
+</div></div>
+<div id="missionEnd" role="dialog" aria-modal="true" aria-labelledby="endTitle"><div class="brief-card">
+  <div class="sequence-label" id="endKicker">MISSION COMPLETE</div>
+  <h2 id="endTitle">Sample returned safely</h2>
+  <div class="stars" id="endStars" role="img" aria-label="Rating"></div>
+  <div class="end-stats" id="endStats"></div>
+  <p class="end-tip" id="endTip"></p>
+  <div class="end-actions"><button id="againBtn" class="glass-btn primary">PLAY AGAIN</button><button id="endMapBtn" class="glass-btn">MISSION MAP</button></div>
+</div></div>
 <div id="pauseScreen"><div class="pause-card"><div class="sequence-label">SUIT LINK PAUSED</div><h2>MISSION ON HOLD</h2><p>Mouse control released. Resume exploration or return to the mission map.</p><button id="resumeBtn">RESUME SUIT LINK</button><button id="returnMapBtn">RETURN TO MAP</button></div></div>
 <div id="webglError" style="display:none;position:fixed;z-index:20;inset:0;background:#170f12;color:#f6e9df;padding:12vw;font:14px/1.7 monospace">This demo needs WebGL and an internet connection to load the pinned Three.js library. Open it in a recent Chrome or Edge browser.</div>
 <script src="sound.js"></script>
@@ -270,13 +363,12 @@
     // Re-check the layer's live WMTSCapabilities.xml if NASA changes its catalog, matrix names, or image extension.
     MAP_TILE_URL: 'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
     MAP_ELEVATION_TILE_URL: 'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
-    MAP_FALLBACK_IMAGE: 'mars_map.jpg',
     map: { minZoom: 0, maxZoom: 6, lowZoomCellDegrees: 10, highZoomCellDegrees: 5, fineGridAtZoom: 3, fallbackZoom: 1 },
     world: { size: 2000, segments: 190, fogNear: 330, fogFar: 1740, mapResolution: 256 },
     terrain: { noiseScale: 105, noiseAmplitude: 23, detailScale: 34, detailAmplitude: 5.8, ridgeHeight: 21, craterCenter: [65, 85], craterRadius: 185, craterDepth: 17, flatRadius: 250, shape: 'Flat plain' },
     controls: { walkSpeed: 6.0, runSpeed: 10.2, acceleration: 8.2, jumpVelocity: 6.3, gravity: 3.71, mouseSensitivity: 0.00225, slopePenalty: 1.7, boundary: 970 },
     camera: { followDistance: 8.5, followHeight: 3.1, firstPersonHeight: 2.47, followSmoothing: 8, minPitch: -0.72, maxPitch: 0.62 },
-    player: { start: [0, 0], oxygenDrain: 0.018, batteryDrain: 0.014, runDrain: 0.045 },
+    player: { start: [0, 0], oxygenDrain: 0.16, oxygenRunDrain: 0.12, batteryDrain: 0.1, runDrain: 0.16, arriveRadius: 16 },
     zones: [
       { name: 'Landing Site', x: -500, z: -465, radius: 260, color: '#69dfcd', terrain: '#b76848', profile: { temp: -62, rad: 0.28, water: 19, minerals: 14, dust: 24 } },
       { name: 'Mineral Ridge', x: 365, z: -225, radius: 310, color: '#ffd17c', terrain: '#bc7350', profile: { temp: -48, rad: 0.76, water: 34, minerals: 91, dust: 38 } },
@@ -378,9 +470,9 @@
     $('selectedName').textContent=cell.name;
     $('selectedCoords').textContent=`CELL ${cell.label} // ${formatCoord(cell.lat)} · ${formatLon(cell.lon)} · ${cell.step}° GRID`;
     $('nearestFeature').innerHTML=`Nearest feature <b>${insights.nearestFeature}</b>`;
-    $('scoreRing').textContent=score;
-    $('scoreRing').style.borderColor=score>72?'#7ce6d3':score>52?'#ffd187':'#ff806b';
-    $('scoreRing').style.color=score>72?'#a5f2dd':score>52?'#ffe1a4':'#ff9a82';
+    const ring=$('scoreRing'),col=score>72?'#7ce6d3':score>52?'#ffd187':'#ff806b',from=Number(ring.dataset.v||0);
+    ring.style.setProperty('--c',col);ring.style.color=score>72?'#a5f2dd':score>52?'#ffe1a4':'#ff9a82';ring.dataset.v=score;
+    cancelAnimationFrame(ring._raf);const t0=performance.now();const step=now=>{const k=Math.min(1,(now-t0)/600),e=1-Math.pow(1-k,3),v=Math.round(from+(score-from)*e);ring.textContent=v;ring.style.setProperty('--p',v);if(k<1)ring._raf=requestAnimationFrame(step);};ring._raf=requestAnimationFrame(step);
     $('scoreReason').textContent=suitabilityReason(insights);
     const tempGauge=Math.max(0,Math.min(100,(insights.temperature+105)/75*100));
     const rows=[['Minerals richness',insights.minerals,`${insights.minerals}%`],['Water-ice likelihood',insights.water,`${insights.water}%`],['Radiation level',insights.radiation,`${insights.radiation}%`],['Dust-storm risk',insights.dust,`${insights.dust}%`],['Terrain roughness',insights.roughness,`${insights.roughness}%`],['Temperature',tempGauge,`${insights.temperature} °C`]];
@@ -416,18 +508,10 @@
     if(activeBaseLayer&&leafletMap.hasLayer(activeBaseLayer))leafletMap.removeLayer(activeBaseLayer);
     if(fallbackOverlay&&leafletMap.hasLayer(fallbackOverlay))leafletMap.removeLayer(fallbackOverlay);
     $('mapFallbackNotice').classList.add('show');
-    $('mapFallbackNotice').textContent=`NASA tiles did not load (${reason}). Trying local mars_map.jpg, then a generated Mars placeholder.`;
-    setMapStatus('NASA TILE SERVICE UNAVAILABLE · FALLBACK');
-    const local=new Image();
-    local.onload=()=>{
-      fallbackOverlay=L.imageOverlay(CONFIG.MAP_FALLBACK_IMAGE,[[-90,-180],[90,180]],{opacity:.96,interactive:false}).addTo(leafletMap);
-      setMapStatus('OFFLINE IMAGE · mars_map.jpg');$('mapFallbackNotice').textContent='Using local mars_map.jpg. Site insights remain illustrative.';
-    };
-    local.onerror=()=>{
-      fallbackOverlay=L.imageOverlay(proceduralMapImage.toDataURL('image/png'),[[-90,-180],[90,180]],{opacity:.96,interactive:false}).addTo(leafletMap);
-      setMapStatus('PROCEDURAL MARS PLACEHOLDER');$('mapFallbackNotice').textContent='NASA tiles and mars_map.jpg were unavailable. Showing a generated Mars map placeholder.';
-    };
-    local.src=CONFIG.MAP_FALLBACK_IMAGE;
+    fallbackOverlay=L.imageOverlay(proceduralMapImage.toDataURL('image/png'),[[-90,-180],[90,180]],{opacity:.96,interactive:false}).addTo(leafletMap);
+    setMapStatus('PROCEDURAL MARS PLACEHOLDER');
+    $('mapFallbackNotice').textContent=`NASA Mars Trek tiles did not load (${reason}). Showing a generated Mars placeholder — you can still pick a site and play.`;
+    clearTimeout(startTileFallback.hide);startTileFallback.hide=setTimeout(()=>$('mapFallbackNotice').classList.remove('show'),7000);
   }
   function installLeafletLayer(name) {
     if(!leafletMap)return;
@@ -470,9 +554,9 @@
   }
   function initializeLeafletMap() {
     const mapRoot=$('marsMap');
-    if(!window.L){mapRoot.style.display='none';$('fallbackMapCanvas').style.display='block';$('mapFallbackNotice').classList.add('show');$('mapFallbackNotice').textContent='Leaflet could not load. Trying mars_map.jpg, with a generated map if the file is missing.';setMapStatus('BUILT-IN EQUIRECTANGULAR FALLBACK');const img=new Image();img.onload=()=>{localFallbackImage=img;setMapStatus('OFFLINE IMAGE · mars_map.jpg');$('mapFallbackNotice').textContent='Using local mars_map.jpg with built-in grid controls.';drawFallbackMap();};img.onerror=()=>{setMapStatus('PROCEDURAL MARS PLACEHOLDER');$('mapFallbackNotice').textContent='NASA tiles and mars_map.jpg were unavailable. Showing a generated Mars map placeholder.';drawFallbackMap();};img.src=CONFIG.MAP_FALLBACK_IMAGE;drawFallbackMap();return;}
+    if(!window.L){mapRoot.style.display='none';$('fallbackMapCanvas').style.display='block';$('mapFallbackNotice').classList.add('show');$('mapFallbackNotice').textContent='The map library could not load. Showing a generated Mars placeholder with built-in grid controls.';setMapStatus('PROCEDURAL MARS PLACEHOLDER');drawFallbackMap();return;}
     const marsCRS=L.extend({},L.CRS.EPSG4326,{transformation:new L.Transformation(1/180,1,-1/180,.5)});
-    leafletMap=L.map(mapRoot,{crs:marsCRS,center:[0,0],zoom:CONFIG.map.fallbackZoom,minZoom:CONFIG.map.minZoom,maxZoom:CONFIG.map.maxZoom,zoomControl:false,attributionControl:true,worldCopyJump:false});
+    leafletMap=L.map(mapRoot,{crs:marsCRS,center:[0,0],zoom:CONFIG.map.fallbackZoom,minZoom:CONFIG.map.minZoom,maxZoom:CONFIG.map.maxZoom,zoomControl:false,attributionControl:true,preferCanvas:true,worldCopyJump:false});
     leafletMap.setView([0,0],CONFIG.map.fallbackZoom);
     L.control.zoom({position:'bottomright'}).addTo(leafletMap);
     L.control.attribution({prefix:false}).addAttribution('<a href="https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars" target="_blank" rel="noreferrer">NASA Mars Trek WMTS</a>').addTo(leafletMap);
@@ -529,8 +613,10 @@
     }));
     $('profileSelect').addEventListener('change',()=>{if(selectedCell){selectedCell.insights=getCellInsights(selectedCell.id);scoreMetrics(selectedCell,selectedCell.insights);if(leafletMap)drawRecommendations();}});
     $('recommendBtn').addEventListener('click',drawRecommendations);
+    $('mapFallbackNotice').addEventListener('click',()=>$('mapFallbackNotice').classList.remove('show'));
     $('landBtn').addEventListener('click',startLanding);
     $('returnMapBtn').addEventListener('click',returnToMap);
+    $('beginBtn').addEventListener('click',()=>beginEva());$('againBtn').addEventListener('click',()=>restartEva());$('endMapBtn').addEventListener('click',returnToMap);
     $('resumeBtn').addEventListener('click',()=>{ tryLock();setPaused(false); });
     const canvas=$('fallbackMapCanvas');
     canvas.addEventListener('pointerdown',e=>{fallbackDragging={x:e.clientX,y:e.clientY,lat:fallbackView.lat,lon:fallbackView.lon,moved:false};canvas.setPointerCapture(e.pointerId);canvas.classList.add('dragging');});
@@ -765,7 +851,7 @@
   player.y=terrainHeight(player.x,player.z);
   let cameraYaw=0, cameraPitch=-.13, cameraMode=0, viewBlend=0, mapRotates=false, fullMapOpen=false,lastMapPress=0;
   const keys=Object.create(null), cameraTarget=new THREE.Vector3(), lookVec=new THREE.Vector3();
-  let autoPausedAt=0, gameFrameId=0, paused=false, hadLock=false, snapCamera=true, lookDrag=null;
+  let ended=false, holding=false, autoPausedAt=0, gameFrameId=0, paused=false, hadLock=false, snapCamera=true, lookDrag=null;
   const locked=()=>document.pointerLockElement===renderer.domElement;
   function tryLock(){ if(matchMedia('(pointer:coarse)').matches)return; try{const r=renderer.domElement.requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(e){} }
   function setPaused(on){ if(window.SFX&&on!==paused)SFX.whoosh(!on); paused=on;$('pauseScreen').classList.toggle('show',on);if(on){for(const k of Object.keys(keys))keys[k]=false;if(locked())document.exitPointerLock();}else{clock.getDelta();startGameLoop();} }
@@ -776,7 +862,7 @@
   document.addEventListener('pointerlockchange',()=>{
     if(locked()){hadLock=true;$('lockHint').classList.remove('show');return;}
     // pointer lock released (Esc) while playing: pause rather than silently freezing
-    if(appState==='game'&&hadLock&&!paused){setPaused(true);autoPausedAt=performance.now();}
+    if(appState==='game'&&hadLock&&!paused&&!ended&&!holding){setPaused(true);autoPausedAt=performance.now();}
     hadLock=false;
   });
   document.addEventListener('mousemove',e=>{ if(appState==='game'&&locked())look(e.movementX,e.movementY); });
@@ -784,7 +870,7 @@
   document.addEventListener('keydown',e=>{
     if(appState!=='game')return;
     if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
-    if(e.repeat)return;if(paused&&e.code!=='Escape'&&e.code!=='KeyP')return;keys[e.code]=true;
+    if(e.repeat)return;if((paused||ended||holding)&&e.code!=='Escape'&&e.code!=='KeyP')return;keys[e.code]=true;
     if(e.code==='KeyV') { cameraMode=1-cameraMode; }
     if(e.code==='KeyM') {
       const now=performance.now();
@@ -792,7 +878,8 @@
       lastMapPress=now;mapRotates=!mapRotates;$('mapMode').textContent=mapRotates?'PLAYER UP · GRID SIMULATED':'GRID SIMULATED · M TO ROTATE';
     }
     if(e.code==='Tab') { fullMapOpen=!fullMapOpen; $('fullMap').classList.toggle('open',fullMapOpen); }
-    if(e.code==='Escape'||e.code==='KeyP') { keys[e.code]=false;if(!locked()&&performance.now()-autoPausedAt>400)setPaused(!paused); }
+    if(e.code==='Escape'||e.code==='KeyP') { keys[e.code]=false;if(!ended&&!holding&&!locked()&&performance.now()-autoPausedAt>400)setPaused(!paused); }
+    if(holding&&(e.code==='Enter'||e.code==='Space')){e.preventDefault();beginEva();}
   });
   document.addEventListener('keyup',e=>{keys[e.code]=false;});
   document.addEventListener('pointerlockerror',()=>{ if(appState==='game')$('lockHint').classList.add('show'); });
@@ -905,7 +992,7 @@
   function updateHUD(dt,time,running) {
     const target=desiredTelemetry(time), k=1-Math.exp(-CONFIG.hud.smoothing*dt);
     for(const key of Object.keys(hudNow))hudNow[key]=THREE.MathUtils.lerp(hudNow[key],target[key],k);
-    player.oxygen=Math.max(0,player.oxygen-dt*(CONFIG.player.oxygenDrain+(running ? .018 : 0)));
+    player.oxygen=Math.max(0,player.oxygen-dt*(CONFIG.player.oxygenDrain+(running ? CONFIG.player.oxygenRunDrain : 0)));
     player.battery=Math.max(0,player.battery-dt*(CONFIG.player.batteryDrain+(running?CONFIG.player.runDrain:0)));
     setText('temp',hudNow.temp.toFixed(1));setText('radValue',hudNow.rad.toFixed(2));
     const radEl=$('radValue');radEl.classList.toggle('safe',hudNow.rad<.6);radEl.classList.toggle('caution',hudNow.rad>=.6&&hudNow.rad<=1);radEl.classList.toggle('danger',hudNow.rad>1);$('radWarn').classList.toggle('show',hudNow.rad>1);
@@ -915,7 +1002,10 @@
     setText('water',Math.round(hudNow.water));setText('minerals',Math.round(hudNow.minerals));setText('dust',Math.round(hudNow.dust));
     setText('oxygen',Math.round(player.oxygen));setText('battery',Math.round(player.battery));
     $('waterMeter').style.width=`${hudNow.water}%`;$('mineralMeter').style.width=`${hudNow.minerals}%`;$('dustMeter').style.width=`${hudNow.dust}%`;$('oxygenMeter').style.width=`${player.oxygen}%`;$('batteryMeter').style.width=`${player.battery}%`;
-    const dx=CONFIG.destination.x-player.x,dz=CONFIG.destination.z-player.z,dist=Math.hypot(dx,dz);
+    const tgt=mission.phase==='outbound'?CONFIG.destination:CONFIG.zones[0];
+    const dx=tgt.x-player.x,dz=tgt.z-player.z,dist=Math.hypot(dx,dz);
+    mission.walked+=Math.hypot(player.x-mission.lx,player.z-mission.lz);mission.lx=player.x;mission.lz=player.z;
+    updateMission(dist);
     setText('distance',`${Math.round(dist).toLocaleString()} m`);
     const bearingDeg=(Math.atan2(dx,-dz)*180/Math.PI+360)%360, rel=((bearingDeg+player.yaw*180/Math.PI)%360+360)%360;
     setText('bearing',`${Math.round(bearingDeg).toString().padStart(3,'0')}°`);$('bearingArrow').style.transform=`rotate(${rel}deg)`;
@@ -924,6 +1014,39 @@
   }
 
   let elapsed=0, stormVisibleUntil=0, lastStorm=0;
+  // MISSION: outbound to the ice deposit, sample, return to the lander before consumables run out.
+  const mission={phase:'outbound',walked:0,lx:0,lz:0,warn:{},alertUntil:0};
+  function resetMission(){Object.assign(mission,{phase:'outbound',walked:0,lx:player.x,lz:player.z,warn:{},alertUntil:0});$('missionTitle').textContent=`OBJECTIVE 1/2 · REACH ${CONFIG.destination.name.toUpperCase()}`;$('missionFoot').textContent='FOLLOW THE CYAN BEAM · COLLECT A SAMPLE';$('alert').className='';}
+  function alertMsg(text,kind,secs=3.2){const a=$('alert');a.textContent=text;a.className='show '+(kind||'');mission.alertUntil=elapsed+secs;}
+  function updateMission(dist){
+    if(elapsed>mission.alertUntil)$('alert').classList.remove('show');
+    if(mission.phase==='outbound'&&dist<CONFIG.player.arriveRadius){mission.phase='return';if(window.SFX)SFX.success();alertMsg('✓ SAMPLE COLLECTED · RETURN TO THE LANDER','good',4);
+      $('missionTitle').textContent='OBJECTIVE 2/2 · RETURN TO LANDING SITE';$('missionFoot').textContent='HEAD BACK BEFORE O₂ RUNS OUT';}
+    else if(mission.phase==='return'&&dist<CONFIG.player.arriveRadius){endMission(true);return;}
+    const low=Math.min(player.oxygen,player.battery);
+    for(const lvl of [30,15]){if(low<=lvl&&!mission.warn[lvl]){mission.warn[lvl]=1;if(window.SFX)SFX.error();alertMsg(lvl===15?'⚠ CRITICAL RESERVES · RETURN NOW':'⚠ RESERVES BELOW 30%','bad',4);}}
+    $('hud').classList.toggle('critical',low<=15);
+    if(player.oxygen<=0||player.battery<=0)endMission(false);
+  }
+  function endMission(win){
+    if(ended)return;ended=true;mission.phase='done';for(const k of Object.keys(keys))keys[k]=false;
+    if(locked())document.exitPointerLock();
+    const mins=Math.floor(elapsed/60),secs=Math.floor(elapsed%60),o2=Math.round(player.oxygen),stars=win?(o2>=45?3:o2>=25?2:1):0;
+    $('endKicker').textContent=win?'MISSION COMPLETE':'MISSION FAILED';
+    $('endTitle').textContent=win?'Sample returned safely':(player.oxygen<=0?'Oxygen depleted':'Suit battery depleted');
+    $('endStars').innerHTML=[1,2,3].map(i=>`<span class="${i<=stars?'on':''}">★</span>`).join('');
+    $('endStars').setAttribute('aria-label',`${stars} of 3 stars`);
+    $('endStats').innerHTML=`<div><b>${mins}:${String(secs).padStart(2,'0')}</b><small>EVA time</small></div><div><b>${Math.round(mission.walked).toLocaleString()} m</b><small>walked</small></div><div><b>${o2}%</b><small>O₂ left</small></div><div><b>${Math.round(player.battery)}%</b><small>battery left</small></div>`;
+    $('endTip').textContent=win?(stars<3?'Tip: walk instead of sprinting and take gentler slopes to save oxygen for 3 stars.':'Flawless EVA — efficient route and healthy reserves.'):'Tip: sprinting (Shift) burns oxygen and battery much faster. Turn back once reserves near 50%.';
+    $('missionEnd').className='show '+(win?'win':'lose');if(window.SFX)(win?SFX.success():SFX.error());setTimeout(()=>$('againBtn').focus(),60);
+  }
+  function restartEva(){
+    ended=false;player.x=7;player.z=9;player.y=terrainHeight(7,9);player.vx=player.vz=player.vy=0;player.oxygen=100;player.battery=100;player.onGround=true;
+    astronaut.position.set(player.x,player.y,player.z);trail.length=0;elapsed=0;lastStorm=0;stormVisibleUntil=0;$('storm').classList.remove('show');snapCamera=true;resetMission();$('hud').classList.remove('critical');
+    $('missionEnd').className='';updateCamera(1/60);showBriefing();
+  }
+  function showBriefing(){holding=true;$('briefing').classList.add('show');renderer.render(scene,camera);setTimeout(()=>$('beginBtn').focus(),50);}
+  function beginEva(){if(!holding)return;holding=false;$('briefing').classList.remove('show');tryLock();clock.getDelta();startGameLoop();}
   const clock=new THREE.Clock();
   const desiredCamPos=new THREE.Vector3(), thirdCamPos=new THREE.Vector3(), firstCamPos=new THREE.Vector3();
   const firstLookTarget=new THREE.Vector3(), blendedLookTarget=new THREE.Vector3();
@@ -978,13 +1101,13 @@
   }
   // LANDING: apply the selected cell, play the short descent, then activate the game loop.
   function startLanding(){
-    if(appState!=='map'||!selectedCell)return;
+    if(appState!=='map'||!selectedCell||!gameAvailable)return;
     const insights=selectedCell.insights||getCellInsights(selectedCell.id);
     applyCellToWorld(selectedCell,insights);
     if(window.SFX){SFX.whoosh(false);setTimeout(()=>SFX.whoosh(true),1500);}
     appState='landing';enableLeafletInteractions(false);$('missionMapScreen').classList.add('depart');$('landingSequence').classList.add('show');
     $('descentStep').textContent='ENTRY';$('descentCount').textContent='AUTONOMOUS DESCENT IN 5';
-    tryLock();
+    // mouse capture is requested later, on BEGIN EVA, so the briefing stays clickable
     setTimeout(()=>$('descentStep').textContent='DESCENT',1450);
     setTimeout(()=>{$('descentStep').textContent='LANDING';$('descentCount').textContent='SURFACE CONTACT IN 2';},2950);
     setTimeout(()=>{
@@ -992,22 +1115,22 @@
       if(window.SFX)SFX.success();
       appState='game';document.body.classList.add('state-game');paused=false;snapCamera=true;$('pauseScreen').classList.remove('show');
       $('lockHint').classList.toggle('show',!locked()&&!matchMedia('(pointer:coarse)').matches);
-      elapsed=0;lastStorm=0;stormVisibleUntil=0;clock.start();startGameLoop();
+      elapsed=0;lastStorm=0;stormVisibleUntil=0;ended=false;resetMission();updateCamera(1/60);clock.start();showBriefing();
     },4550);
   }
   function returnToMap(){
     if(gameFrameId){cancelAnimationFrame(gameFrameId);gameFrameId=0;}
     if(document.pointerLockElement===renderer.domElement)document.exitPointerLock();
-    appState='map';paused=false;lookDrag=null;for(const k of Object.keys(keys))keys[k]=false;document.body.classList.remove('state-game');$('pauseScreen').classList.remove('show');$('lockHint').classList.remove('show');
+    appState='map';paused=false;ended=false;holding=false;$('missionEnd').className='';$('briefing').classList.remove('show');$('hud').classList.remove('critical');lookDrag=null;for(const k of Object.keys(keys))keys[k]=false;document.body.classList.remove('state-game');$('pauseScreen').classList.remove('show');$('lockHint').classList.remove('show');
     $('landingSequence').classList.remove('show');$('missionMapScreen').classList.remove('depart');$('fullMap').classList.remove('open');
     $('hud').classList.remove('helmet');fullMapOpen=false;enableLeafletInteractions(true);
     if(leafletMap){leafletMap.invalidateSize();drawLeafletGrid();}else drawFallbackMap();
   }
   function startGameLoop(){
-    if(gameFrameId||appState!=='game'||paused)return;
+    if(gameFrameId||appState!=='game'||paused||ended||holding)return;
     const frame=()=>{
       gameFrameId=0;
-      if(appState!=='game'||paused)return;
+      if(appState!=='game'||paused||ended||holding)return;
       const dt=Math.min(clock.getDelta(),.05);elapsed+=dt;
       const running=updatePlayer(dt);updateCamera(dt);updateHUD(dt,elapsed,running);
       if(trail.length===0||Math.hypot(player.x-lastTrailX,player.z-lastTrailZ)>4){trail.push({x:player.x,z:player.z});lastTrailX=player.x;lastTrailZ=player.z;if(trail.length>750)trail.shift();}
@@ -1019,8 +1142,9 @@
     gameFrameId=requestAnimationFrame(frame);
   }
   document.querySelectorAll('#touchPad button').forEach(b=>{const k=b.dataset.key;
-    b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(k==='KeyV')cameraMode=1-cameraMode;else if(k==='KeyP')setPaused(!paused);else keys[k]=true;});
+    b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(k==='KeyV')cameraMode=1-cameraMode;else if(k==='KeyP'){if(!ended&&!holding)setPaused(!paused);}else keys[k]=true;});
     ['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,()=>{if(k!=='KeyV'&&k!=='KeyP')keys[k]=false;}));});
+  window.FIELD_OPS={player,mission,config:CONFIG,get state(){return {appState,paused,ended,holding};}}; // read/write hook for automated tests
   initializeMissionMap();
   window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
 })();
